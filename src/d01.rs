@@ -1,6 +1,6 @@
 use std::{fs, io};
 
-fn sum_calories(input: String, top_elves: i32) -> i32 {
+fn sum_calories(input: String, top_elves: usize) -> i32 {
     let mut raindeers: Vec<i32> = vec![0];
     let mut current = 0;
 
@@ -17,11 +17,7 @@ fn sum_calories(input: String, top_elves: i32) -> i32 {
     // reverse order
     raindeers.sort_by(|a, b| b.cmp(a));
 
-    let sum = raindeers
-        .get(0..top_elves as usize)
-        .unwrap()
-        .iter()
-        .sum::<i32>();
+    let sum = raindeers.get(0..top_elves).unwrap().iter().sum::<i32>();
 
     sum
 }
