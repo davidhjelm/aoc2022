@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug current examples file",
+            "cargo": {
+                "args": [
+                    "run",
+                    "--bin",
+                    "${fileBasenameNoExtension}"
+                ]
+            },
+            "args": []
+        }
+    ]
+}
