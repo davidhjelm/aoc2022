@@ -1,6 +1,6 @@
 use std::{fs, io};
 
-fn sum_calories(input: String) -> i32 {
+fn sum_calories(input: String, top_elves: i32) -> i32 {
     let mut raindeers: Vec<i32> = vec![0];
     let mut current = 0;
 
@@ -14,13 +14,25 @@ fn sum_calories(input: String) -> i32 {
         }
     }
 
-    *raindeers.iter().max().unwrap()
+    // reverse order
+    raindeers.sort_by(|a, b| b.cmp(a));
+
+    let sum = raindeers
+        .get(0..top_elves as usize)
+        .unwrap()
+        .iter()
+        .sum::<i32>();
+
+    sum
 }
 
 fn main() -> io::Result<()> {
     let data = fs::read_to_string("./inputs/d01").expect("Should open");
 
-    println!("{}", sum_calories(data));
+    // pt 1
+    println!("{}", sum_calories(data.clone(), 1));
+    // pt 2
+    println!("{}", sum_calories(data, 3));
 
     Ok(())
 }
@@ -42,5 +54,9 @@ fn tfunc() {
 
 10000"#
         .to_string();
-    assert_eq!(sum_calories(input), 24000);
+    // pt 1
+    assert_eq!(sum_calories(input.clone(), 1), 24000);
+
+    // pt 2
+    assert_eq!(sum_calories(input, 3), 45000);
 }
