@@ -1,47 +1,24 @@
-#![allow(dead_code)]
-
 use std::{fs, io};
 
-#[derive(PartialEq, Clone, Copy, Debug)]
+#[derive(PartialEq, Copy, Clone)]
 struct Pos(i32, i32);
 
 struct Rope {
-    head: Pos,
-    tail: Pos,
+    pieces: Vec<Pos>,
     tail_positions: Vec<Pos>,
 }
 
 impl Rope {
-    fn is_touching(&self) -> bool {
-        if self.head.0 - self.tail.0 < 2
-            && self.head.0 - self.tail.0 > -2
-            && self.head.1 - self.tail.1 < 2
-            && self.head.1 - self.tail.1 > -2
-        {
-            return true;
-        } else {
-            return false;
+    fn new(n: i32) -> Self {
+        let mut pieces: Vec<Pos> = vec![];
+
+        for _i in 0..n {
+            pieces.push(Pos(0, 0));
         }
-    }
 
-    fn move_rope(&mut self, add_pos: Pos) {
-        self.head.0 += add_pos.0;
-        self.head.1 += add_pos.1;
-    }
-
-    fn update_rope(&mut self, add_pos: Pos) {
-        if !self.is_touching() {
-            self.tail.0 += add_pos.0;
-            self.tail.1 += add_pos.1;
-
-            if add_pos.0 != 0 {
-                self.tail.1 = self.head.1
-            } else if add_pos.1 != 0 {
-                self.tail.0 = self.head.0
-            }
-        }
-        if !self.tail_positions.contains(&self.tail) {
-            self.tail_positions.push(self.tail);
+        Self {
+            pieces,
+            tail_positions: vec![],
         }
     }
 
@@ -49,18 +26,70 @@ impl Rope {
         let mut parsed = input.split(" ");
         let dir = parsed.next().unwrap();
         let amount: i32 = parsed.next().unwrap().parse().unwrap();
-        let pos;
+        let add_pos;
         match dir {
-            "R" => pos = Pos(0, 1),
-            "L" => pos = Pos(0, -1),
-            "U" => pos = Pos(-1, 0),
-            "D" => pos = Pos(1, 0),
+            "R" => add_pos = Pos(0, 1),
+            "L" => add_pos = Pos(0, -1),
+            "U" => add_pos = Pos(-1, 0),
+            "D" => add_pos = Pos(1, 0),
             _ => panic!("should not get here"),
         }
 
         for _i in 0..amount {
-            self.move_rope(pos);
-            self.update_rope(pos);
+            self.move_head(add_pos); // move head
+
+            for i in 1..self.pieces.len() {
+                self.update_rope(i, i - 1);
+
+                if i + 1 == self.pieces.len() {
+                    let p = &self.pieces[i];
+                    if !self.tail_positions.contains(&p) {
+                        self.tail_positions.push(*p);
+                    }
+                }
+            }
+        }
+    }
+
+    fn is_touching(&self, start: usize, end: usize) -> bool {
+        if self.pieces[start].0 - self.pieces[end].0 < 2
+            && self.pieces[start].0 - self.pieces[end].0 > -2
+            && self.pieces[start].1 - self.pieces[end].1 < 2
+            && self.pieces[start].1 - self.pieces[end].1 > -2
+        {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    fn move_head(&mut self, add_pos: Pos) {
+        self.pieces[0].0 += add_pos.0;
+        self.pieces[0].1 += add_pos.1;
+    }
+
+    fn get_dir(&self, this: usize, prev: usize) -> Pos {
+        let mut new_dir = Pos(0, 0);
+        if self.pieces[prev].0 < self.pieces[this].0 {
+            new_dir.0 -= 1;
+        }
+        if self.pieces[prev].0 > self.pieces[this].0 {
+            new_dir.0 += 1;
+        }
+        if self.pieces[prev].1 < self.pieces[this].1 {
+            new_dir.1 -= 1;
+        }
+        if self.pieces[prev].1 > self.pieces[this].1 {
+            new_dir.1 += 1;
+        }
+        new_dir
+    }
+
+    fn update_rope(&mut self, this: usize, prev: usize) {
+        if !self.is_touching(this, prev) {
+            let new_dir = self.get_dir(this, prev);
+            self.pieces[this].0 += new_dir.0;
+            self.pieces[this].1 += new_dir.1;
         }
     }
 }
@@ -68,52 +97,32 @@ impl Rope {
 fn main() -> io::Result<()> {
     let data = fs::read_to_string("./inputs/d09").expect("Should open");
 
-    let mut rope = Rope {
-        head: Pos(0, 0),
-        tail: Pos(0, 0),
-        tail_positions: vec![],
-    };
+    // pt 1:
+    let mut rope1 = Rope::new(2);
 
     for line in data.lines() {
-        rope.parse(line);
+        rope1.parse(line);
     }
 
-    dbg!(rope.tail_positions.len());
+    // pt 2:
+    let mut rope2 = Rope::new(10);
+
+    for line in data.lines() {
+        rope2.parse(line);
+    }
+
+    println!(
+        "pt1: {}, pt2: {}",
+        rope1.tail_positions.len(),
+        rope2.tail_positions.len()
+    );
 
     Ok(())
 }
 
 #[test]
-fn test_move() {
-    let mut rope = Rope {
-        head: Pos(0, 0),
-        tail: Pos(0, 0),
-        tail_positions: vec![],
-    };
-
-    rope.move_rope(Pos(0, 1));
-
-    assert_eq!(rope.head.0, 0);
-    assert_eq!(rope.head.1, 1);
-
-    assert_eq!(rope.is_touching(), true);
-    rope.move_rope(Pos(0, 1));
-    assert_eq!(rope.is_touching(), false);
-    rope.update_rope(Pos(0, 1));
-    assert_eq!(rope.is_touching(), true);
-
-    let mut rope = Rope {
-        head: Pos(-1, 1),
-        tail: Pos(0, 0),
-        tail_positions: vec![],
-    };
-    assert_eq!(rope.is_touching(), true);
-    rope.move_rope(Pos(-1, 0));
-    assert_eq!(rope.is_touching(), false);
-    rope.update_rope(Pos(-1, 0));
-
-    assert_eq!(rope.tail.0 == -1 && rope.tail.1 == 1, true);
-
+fn test_part2() {
+    let mut rope = Rope::new(2);
     let input = r#"R 4
 U 4
 L 3
@@ -126,56 +135,22 @@ R 2"#;
     for line in input.lines() {
         rope.parse(line);
     }
-
     assert_eq!(rope.tail_positions.len(), 13);
-}
 
-fn test_is_touching() {
-    let rope = Rope {
-        head: Pos(0, 0),
-        tail: Pos(0, 0),
-        tail_positions: vec![],
-    };
+    let mut rope = Rope::new(10);
 
-    assert_eq!(rope.is_touching(), true);
+    let input = r#"R 5
+U 8
+L 8
+D 3
+R 17
+D 10
+L 25
+U 20"#;
 
-    let rope = Rope {
-        head: Pos(1, 0),
-        tail: Pos(0, 0),
-        tail_positions: vec![],
-    };
+    for line in input.lines() {
+        rope.parse(line);
+    }
 
-    assert_eq!(rope.is_touching(), true);
-
-    let rope = Rope {
-        head: Pos(1, 1),
-        tail: Pos(0, 0),
-        tail_positions: vec![],
-    };
-
-    assert_eq!(rope.is_touching(), true);
-
-    let rope = Rope {
-        head: Pos(0, 1),
-        tail: Pos(-1, 0),
-        tail_positions: vec![],
-    };
-
-    assert_eq!(rope.is_touching(), true);
-
-    let rope = Rope {
-        head: Pos(1, 1),
-        tail: Pos(-1, 0),
-        tail_positions: vec![],
-    };
-
-    assert_eq!(rope.is_touching(), false);
-
-    let rope = Rope {
-        head: Pos(1, 2),
-        tail: Pos(0, 0),
-        tail_positions: vec![],
-    };
-
-    assert_eq!(rope.is_touching(), false);
+    assert_eq!(rope.tail_positions.len(), 36);
 }
